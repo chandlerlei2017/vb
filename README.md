@@ -15,8 +15,8 @@ This repo is for ball recognition and tracking in live volleyball game.
 *python3 high.py <path_to_vb_file> <mask_output_dir> <color_output_dir>*
 
 3. Classify manually the blobs into 2 classes (b)all/(n)ot ball
-4. Put the classified data into vball-net/train
-5. cd vball-net
+4. Put the classified data into ball-net/train
+5. cd ball-net
 6. Python3 train.py
 7. Test blobber: 
 

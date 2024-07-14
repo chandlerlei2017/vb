@@ -251,4 +251,3 @@ def test_clip(path):
 
 if __name__ == "__main__":
   test_clip(sys.argv[1])
-  #test_clip("D:/Videos/aus4.avi")
