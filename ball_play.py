@@ -45,6 +45,7 @@ def test_clip(path):
 
   while(True):
     ret, frame = vs.read()
+
     if not ret or frame is None:
       break
 
@@ -61,16 +62,37 @@ def test_clip(path):
     blobber.handle_blobs(mask, frame)
 
     ball_blob = blobber.get_ball_blob()
-    if ball_blob is not None: ball_count += 1
+    if ball_blob is not None and ball_blob.pts[-1][1] < int(0.5 * 0.5 * frame_height): 
+      # print(ball_blob.pts[-1], int(0.4 * 0.5 * frame_height))
+      ball_count += 1
 
     if n != 0 and n % frame_window == 0:
       ratio = ball_count / frame_window
 
-      if ratio > 0.2:
-        if prev_was_picked:
-          for frame in curr_frames: out.write(frame)
+      if ratio > 0.15:
+        # cv.putText(
+        #     frame,
+        #     f"Wrote last 2s",
+        #     (50, 50),
+        #     cv.FONT_HERSHEY_SIMPLEX,
+        #     1,
+        #     (255, 255, 255),
+        #     2,
+        # )
+
+        for frame in curr_frames: out.write(frame)
+        
         prev_was_picked = True
       elif prev_was_picked:
+        # cv.putText(
+        #     frame,
+        #     f"Wrote last 2s",
+        #     (50, 50),
+        #     cv.FONT_HERSHEY_SIMPLEX,
+        #     1,
+        #     (255, 255, 255),
+        #     2,
+        # )
         for frame in curr_frames: out.write(frame)
         prev_was_picked = False
       else:
@@ -79,9 +101,6 @@ def test_clip(path):
       curr_frames = []
       ball_count = 0
       print(f'At frame {n} or {n // frame_rate} seconds')
-
-    # blobber.draw_ball_path(frame)
-    # blobber.draw_ball(frame)
 
     # cv.putText(
     #     frame,
@@ -92,6 +111,9 @@ def test_clip(path):
     #     (255, 255, 255),
     #     2,
     # )
+
+    # blobber.draw_ball_path(frame)
+    # blobber.draw_ball(frame)
 
     # cv.imwrite("frames/frame-{:03d}.jpg".format(n), frame)
     # cv.imshow('frame', frame)
