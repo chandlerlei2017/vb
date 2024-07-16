@@ -4,6 +4,7 @@ import os
 import ball_net as bn
 import blobber
 import sys
+from moviepy.editor import *
 
 def draw_ball(mask, frame):
   cnts, _ = cv.findContours(mask, cv.RETR_CCOMP, cv.CHAIN_APPROX_SIMPLE)
@@ -29,19 +30,20 @@ def draw_ball(mask, frame):
 def test_clip(path):
   vs = cv.VideoCapture(path)
   backSub = cv.createBackgroundSubtractorMOG2()
+
   n = 0
 
   frame_rate = round(vs.get(cv.CAP_PROP_FPS))
   frame_width  = vs.get(cv.CAP_PROP_FRAME_WIDTH)
   frame_height = vs.get(cv.CAP_PROP_FRAME_HEIGHT)
 
-  curr_frames = []
+  boundaries = []
   frame_window = frame_rate * 2
   ball_count = 0
   prev_was_picked = False
   ratio = 0
 
-  out = cv.VideoWriter('output.mp4', cv.VideoWriter_fourcc(*"mp4v"), frame_rate, (round(frame_width),round(frame_height)))
+  # out = cv.VideoWriter('output.mp4', cv.VideoWriter_fourcc(*"mp4v"), frame_rate, (round(frame_width),round(frame_height)))
 
   while(True):
     ret, frame = vs.read()
@@ -51,7 +53,7 @@ def test_clip(path):
 
     h = frame.shape[0]
     w = frame.shape[1]
-    curr_frames.append(frame)
+    # curr_frames.append(frame)
 
     frame = cv.resize(frame, (int(w/2),int(h/2)))
     mask = backSub.apply(frame)
@@ -68,6 +70,8 @@ def test_clip(path):
 
     if n != 0 and n % frame_window == 0:
       ratio = ball_count / frame_window
+      prev_timestamp = (n - frame_window) / frame_rate
+      curr_timestamp = n / frame_rate
 
       if ratio > 0.15:
         # cv.putText(
@@ -80,7 +84,12 @@ def test_clip(path):
         #     2,
         # )
 
-        for frame in curr_frames: out.write(frame)
+        # for frame in curr_frames: out.write(frame)
+
+        if not boundaries or boundaries[-1][1] != prev_timestamp:
+          boundaries.append([prev_timestamp, curr_timestamp])
+        else:
+          boundaries[-1][1] = curr_timestamp
         
         prev_was_picked = True
       elif prev_was_picked:
@@ -93,12 +102,18 @@ def test_clip(path):
         #     (255, 255, 255),
         #     2,
         # )
-        for frame in curr_frames: out.write(frame)
+        # for frame in curr_frames: out.write(frame)
+
+        if not boundaries or boundaries[-1][1] != prev_timestamp:
+          boundaries.append([prev_timestamp, curr_timestamp])
+        else:
+          boundaries[-1][1] = curr_timestamp
+
         prev_was_picked = False
       else:
         prev_was_picked = False
 
-      curr_frames = []
+      # curr_frames = []
       ball_count = 0
       print(f'At frame {n} or {n // frame_rate} seconds')
 
@@ -122,10 +137,22 @@ def test_clip(path):
     n += 1
 
   if ball_count / (n % frame_window) > 0.2 or prev_was_picked:
-    for frame in curr_frames: out.write(frame)
-  
+      curr_timestamp = (n - (n % frame_window)) / frame_rate
+      prev_timestamp = n / frame_rate
+
+      if not boundaries or boundaries[-1][1] != prev_timestamp:
+        boundaries.append([prev_timestamp, curr_timestamp])
+      else:
+        boundaries[-1][1] = curr_timestamp
+
+
+    # for frame in curr_frames: out.write(frame)
+
+  input = VideoFileClip(path)
+  concatenate_videoclips([input.subclip(start,end) for start,end in boundaries]).write_videofile('output.mp4',codec='libx264', audio_codec='aac', temp_audiofile='temp-audio.m4a', remove_temp=True)
+
   vs.release()
-  out.release()
+  # out.release()
   cv.destroyAllWindows()
 
 test_clip(sys.argv[1])
